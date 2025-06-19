@@ -56,54 +56,60 @@
     </a-entity>
   </a-scene>
 
-  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const sceneEl = document.querySelector("a-scene");
-      const video = document.getElementById("video");
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const sceneEl = document.querySelector("a-scene");
+    const video = document.getElementById("video");
 
-      // iOS motion permission
-      if (
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function'
-      ) {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              console.log("Orientation permission granted.");
-            } else {
-              alert("Orientation permission denied.");
-            }
-          })
-          .catch(err => console.error("Orientation request error", err));
-      }
+    // Step 1: iOS motion permission
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function'
+    ) {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            console.log("✅ Orientation permission granted");
+          }
+        })
+        .catch(err => console.error("❌ Orientation request error:", err));
+    }
 
-      // Wait for A-Frame + components to fully load
-      sceneEl.addEventListener("loaded", () => {
+    // Step 2: Wait for scene to load
+    sceneEl.addEventListener("loaded", () => {
+      console.log("✅ Scene loaded. Waiting for MindAR...");
+
+      const waitForMindAR = () => {
         const mindarComponent = sceneEl.components["mindar-image"];
-        
+
         if (mindarComponent && typeof mindarComponent.start === 'function') {
           mindarComponent.start();
-          console.log("MindAR tracking started");
+          console.log("✅ MindAR tracking started");
         } else {
-          console.error("MindAR component is not ready.");
+          console.warn("⏳ Waiting for MindAR...");
+          setTimeout(waitForMindAR, 100); // retry in 100ms
         }
-      });
+      };
 
-      // Start video on user interaction
-      document.body.addEventListener("click", () => {
-        if (video.paused) {
-          video.play().then(() => {
-            console.log("Video playback started");
-          }).catch(err => {
-            console.warn("Video play failed", err);
-          });
-        }
-      }, { once: true });
-
-      // Optional debug events
-      sceneEl.addEventListener("arReady", () => console.log("✅ AR Ready"));
-      sceneEl.addEventListener("arError", err => console.error("❌ AR Error", err));
+      waitForMindAR(); // Start polling
     });
-  </script>
+
+    // Step 3: Play video after user tap
+    document.body.addEventListener("click", () => {
+      if (video.paused) {
+        video.play().then(() => {
+          console.log("▶️ Video playback started");
+        }).catch(err => {
+          console.warn("⚠️ Video playback failed:", err);
+        });
+      }
+    }, { once: true });
+
+    // Optional debug events
+    sceneEl.addEventListener("arReady", () => console.log("✅ AR Ready"));
+    sceneEl.addEventListener("arError", err => console.error("❌ AR Error:", err));
+  });
+</script>
+
 </body>
 </html>
