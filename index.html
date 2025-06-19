@@ -1,84 +1,62 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>WebAR Image Tracking with Video</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+  <meta charset="utf-8" />
+  <title>WebAR Image Tracking with Video</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/aframe/mindar-image-aframe.prod.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; background: black; }
+  </style>
+</head>
+<body>
+  <a-scene
+    mindar-image="imageTargetSrc: ./assets/target.mind; autoStart: false;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+    embedded
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+  >
+    <a-assets>
+      <video
+        id="video"
+        src="./assets/video.mp4"
+        loop muted crossorigin="anonymous"
+        preload="auto" playsinline webkit-playsinline
+      ></video>
+    </a-assets>
 
-    <!-- A-Frame + MindAR -->
-    <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/aframe/mindar-image-aframe.prod.js"></script>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <style>
-      body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; background: black; }
-    </style>
-  </head>
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-video src="#video" width="1" height="0.56" position="0 0 0" rotation="-90 0 0"></a-video>
+    </a-entity>
+  </a-scene>
 
-  <body>
-    <a-scene
-      mindar-image="imageTargetSrc: ./assets/target.mind; autoStart: true;"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
-      embedded
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-    >
-      <a-assets>
-        <video
-          id="video"
-          src="./assets/video.mp4"
-          loop
-          muted
-          crossorigin="anonymous"
-          preload="auto"
-          playsinline
-          webkit-playsinline
-        ></video>
-      </a-assets>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sceneEl = document.querySelector("a-scene");
+      const video = document.getElementById("video");
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-video
-          src="#video"
-          width="1"
-          height="0.56"
-          position="0 0 0"
-          rotation="-90 0 0"
-        ></a-video>
-      </a-entity>
-    </a-scene>
-
-    <script>
-      window.addEventListener("DOMContentLoaded", () => {
-        const video = document.querySelector("#video");
-
-        // Ask camera permission on load (required by iOS and Android browsers)
-        if (
-          typeof DeviceOrientationEvent !== 'undefined' &&
-          typeof DeviceOrientationEvent.requestPermission === 'function'
-        ) {
-          DeviceOrientationEvent.requestPermission()
-            .then(response => {
-              if (response === 'granted') {
-                console.log('Device orientation permission granted');
-              }
-            })
-            .catch(console.error);
-        }
-
-        // Tap to start video
-        const startVideo = () => {
-          video.play().then(() => {
-            console.log("Video started");
-          }).catch(e => {
-            console.log("User interaction required to play video:", e);
-          });
-        };
-
-        document.body.addEventListener("click", startVideo, { once: true });
+      sceneEl.addEventListener("renderstart", () => {
+        console.log("A-Frame render started – initializing AR.");
+        const mindar = sceneEl.components['mindar-image'];
+        mindar.start();  // Explicitly start the camera & tracker
       });
-    </script>
-  </body>
+
+      document.body.addEventListener("click", () => {
+        video.play()
+        .then(() => console.log("Video playback started"))
+        .catch(e => console.warn("Video requires user interaction", e));
+      }, { once: true });
+
+      // Error event listeners
+      sceneEl.addEventListener("arReady", () => console.log("AR ready"));
+      sceneEl.addEventListener("arError", err => console.error("AR error:", err));
+    });
+  </script>
+</body>
 </html>
